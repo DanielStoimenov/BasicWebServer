@@ -68,7 +68,6 @@ namespace BasicWebServer.Server.HTTP
             }
             catch (Exception)
             {
-
                 throw new InvalidOperationException($"Method {method} is not supported");
             }
         }

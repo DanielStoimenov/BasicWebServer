@@ -17,15 +17,15 @@ namespace BasicWebServer.Server.HTTP
         public static Request Parse(string request)
         {
             var lines = request.Split("\r\n");
-            var firstLine = lines
-                .First()
-                .Split(" ");
 
-            var url = firstLine[1];
-            Method method = ParseMethod(firstLine[0]);
-            HeaderCollection headers = ParseHeaders(lines.Skip(1));
-            var bodyLines = lines.Skip(headers.Count + 2);
-            string body = string.Join("\r\n", bodyLines);
+            var startLine = lines.First().Split(" ");
+
+            var method = ParseMethod(startLine[0]);
+            var url = startLine[1];
+            
+            var headers = ParseHeaders(lines.Skip(1));
+            var bodyLines = lines.Skip(headers.Count + 2).ToArray();
+            var body = string.Join("\r\n", bodyLines);
 
             return new Request()
             {
@@ -36,39 +36,40 @@ namespace BasicWebServer.Server.HTTP
             };
         }
 
-        private static HeaderCollection ParseHeaders(IEnumerable<string> lines)
+        private static HeaderCollection ParseHeaders(IEnumerable<string> headerLines)
         {
-            var headers = new HeaderCollection();
+            var headerCollection = new HeaderCollection();
 
-            foreach (var line in lines)
+            foreach (var headerLine in headerLines)
             {
-                if (line == String.Empty)
+                if (headerLine == String.Empty)
                 {
                     break;
                 }
 
-                var parts = line.Split(":");
+                var headerParts = headerLine.Split(":", 2);
 
-                if (parts.Length != 2)
+                if (headerParts.Length != 2)
                 {
-                    throw new InvalidOperationException("Request headers is not valid");
+                    throw new InvalidOperationException("Request is not valid.");
                 }
 
-                headers.Add(parts[0], parts[1].Trim());
+                var headerName = headerParts[0];
+                var headerValue = headerParts[1].Trim();
             }
 
-            return headers;
+            return headerCollection;
         }
 
         private static Method ParseMethod(string method)
         {
             try
             {
-                return Enum.Parse<Method>(method);
+                return (Method)Enum.Parse(typeof(Method), method, true);
             }
             catch (Exception)
             {
-                throw new InvalidOperationException($"Method {method} is not supported");
+                throw new InvalidOperationException($"Method '{method}' is not supported");
             }
         }
     }

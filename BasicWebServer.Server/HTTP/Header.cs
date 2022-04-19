@@ -10,10 +10,6 @@ namespace BasicWebServer.Server.HTTP
         public const string Location = "Location";
         public const string Server = "Server";
 
-        public string Name { get; set; }
-
-        public string Value { get; set; }
-
         public Header(string _name, string _value)
         {
             Guard.AgainstNull(_name, nameof(_name));
@@ -22,5 +18,12 @@ namespace BasicWebServer.Server.HTTP
             Name = _name;
             Value = _value;
         }
+
+        public string Name { get; set; }
+
+        public string Value { get; set; }
+
+        public override string ToString()
+            => $"{this.Name}: {this.Value}";
     }
 }

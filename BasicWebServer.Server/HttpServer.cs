@@ -1,4 +1,5 @@
 ﻿using BasicWebServer.Server.HTTP;
+using BasicWebServer.Server.Routing;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -12,12 +13,29 @@ namespace BasicWebServer.Server
         private readonly int port;
         private readonly TcpListener serverListener;
 
-        public HttpServer(string ipAddress, int port)
+        private readonly RoutingTable routingTable;
+
+        public HttpServer(
+            string ipAddress, 
+            int port,
+            Action<IRoutingTable> routingTableConfiguration)
         {
             this.ipAddress = IPAddress.Parse(ipAddress);
             this.port = port;
 
             this.serverListener = new TcpListener(this.ipAddress, port);
+
+            routingTableConfiguration(this.routingTable = new RoutingTable());
+        }
+
+        public HttpServer(int port, Action<IRoutingTable> routingTable)
+            : this("127.0.0.1", port, routingTable)
+        {
+        }
+
+        public HttpServer(Action<IRoutingTable> routingTable)
+            : this(8080, routingTable)
+        {
         }
 
         public void Start()
@@ -30,52 +48,56 @@ namespace BasicWebServer.Server
             while (true)
             {
                 var connection = serverListener.AcceptTcpClient();
-                var networkStream = connection.GetStream();
-                string strRequest = ReadRequest(networkStream);
-                Request request = Request.Parse(strRequest);
-                Console.WriteLine(strRequest);
 
-                WriteResponse(networkStream, "Hello from the server!");
+                var networkStream = connection.GetStream();
+
+                string requestText = this.ReadRequest(networkStream);
+
+                Console.WriteLine(requestText);
+
+                var request = Request.Parse(requestText);
+
+                var response = this.routingTable.MatchRequest(request);
+
+                WriteResponse(networkStream, response);
+
                 connection.Close();
             }
         }
 
-        private void WriteResponse(NetworkStream networkStream, string contect)
+        private void WriteResponse(NetworkStream networkStream, Response response)
         {
-            var contentLength = Encoding.UTF8.GetByteCount(contect);
-
-            var response = $@"HTTP/1.1 200 OK
-Content-Type: text/plain; charset=UTF-8
-Content-Length: {contentLength}
-
-{contect}";
-
-            var responseBytes = Encoding.UTF8.GetBytes(response);
+            var responseBytes = Encoding.UTF8.GetBytes(response.ToString());
 
             networkStream.Write(responseBytes);
         }
 
         private string ReadRequest(NetworkStream networkStream)
         {
-            byte[] buffer = new byte[1024];
-            StringBuilder request = new StringBuilder();
+            var bufferLength = 1024;
+            byte[] buffer = new byte[bufferLength];
+
             int totalBytes = 0;
 
+            var requestBuilder = new StringBuilder();
+           
             do
             {
                 int bytesRead = networkStream.Read(buffer, 0, buffer.Length);
+
                 totalBytes += bytesRead;
 
                 if (totalBytes > 10 * 1024)
                 {
-                    throw new InvalidOperationException("Request is too large");
+                    throw new InvalidOperationException("Request is too large.");
                 }
 
-                request.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                requestBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
 
-            } while (networkStream.DataAvailable);
+            }
+            while (networkStream.DataAvailable);
 
-            return request.ToString();
+            return requestBuilder.ToString();
         }
     }
 }

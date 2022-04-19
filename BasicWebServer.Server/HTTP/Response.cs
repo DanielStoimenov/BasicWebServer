@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BasicWebServer.Server.HTTP
 {
@@ -18,8 +14,8 @@ namespace BasicWebServer.Server.HTTP
         {
             StatusCode = statusCode;
 
-            Headers.Add("Server", "SoftUni Server");
-            Headers.Add("Date", $"{DateTime.UtcNow:r}");
+            Headers.Add(Header.Server, "My Web Server");
+            Headers.Add(Header.Date, $"{DateTime.UtcNow:r}");
         }
     }
 }

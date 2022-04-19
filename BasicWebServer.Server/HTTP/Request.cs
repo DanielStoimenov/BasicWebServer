@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Web;
 
 namespace BasicWebServer.Server.HTTP
 {
@@ -13,6 +14,8 @@ namespace BasicWebServer.Server.HTTP
         public HeaderCollection Headers { get; private set; }
 
         public string Body { get; private set; }
+
+        public IReadOnlyDictionary<string, string> Form { get; private set; }
 
         public static Request Parse(string request)
         {
@@ -27,14 +30,45 @@ namespace BasicWebServer.Server.HTTP
             var bodyLines = lines.Skip(headers.Count + 2).ToArray();
             var body = string.Join("\r\n", bodyLines);
 
+            var form = ParseForm(headers, body);
+
             return new Request()
             {
                 Method = method,
                 Url = url,
                 Headers = headers,
-                Body = body
+                Body = body,
+                Form = form
             };
         }
+
+        private static Dictionary<string, string> ParseForm(HeaderCollection headers, string body)
+        {
+            var formCollection = new Dictionary<string, string>();
+
+            if (headers.Contains(Header.ContentType)
+                && headers[Header.ContentType] == ContentType.FormUrlEncoded)
+            {
+                var parsedResult = ParseFormData(body);
+
+                foreach (var (name, value) in parsedResult)
+                {
+                    formCollection.Add(name, value);
+                }
+            }
+
+            return formCollection;
+        }
+
+        private static Dictionary<string, string> ParseFormData(string bodyLines)
+            => HttpUtility.UrlDecode(bodyLines)
+            .Split('&')
+            .Select(part => part.Split('='))
+            .Where(part => part.Length == 2)
+            .ToDictionary(
+                part => part[0],
+                part => part[1],
+                StringComparer.InvariantCultureIgnoreCase);
 
         private static HeaderCollection ParseHeaders(IEnumerable<string> headerLines)
         {

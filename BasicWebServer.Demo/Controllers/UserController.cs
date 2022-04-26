@@ -9,18 +9,10 @@ namespace BasicWebServer.Demo.Controllers
 
         private const string Password = "user123";
 
-        private const string LoginForm = @"<form action='/Login' method='POST'>
-                Username: <input type='text' name='Username'/>
-                Password: <input type='password' name='Password'/>
-                <input type='submit' value ='Log In' /> 
-            </form>";
-
         public UserController(Request request)
             : base(request)
         {
         }
-
-        public Response Login() => Html(LoginForm);
 
         public Response LoginUser()
         {
@@ -41,12 +33,8 @@ namespace BasicWebServer.Demo.Controllers
 
                 return Html(bodyText, cookies);
             }
-            else
-            {
-                bodyText = LoginForm;
-            }
 
-            return Html(bodyText);
+            return Redirect("/Login");
         }
 
         public Response GetUserData()
@@ -56,7 +44,7 @@ namespace BasicWebServer.Demo.Controllers
                return Html($"<h3>Currently logged-in user is with username '{Username}'</h3>") ;
             }
 
-            return Redirect("/login");
+            return Redirect("/Login");
         }
 
         public Response Logout()
@@ -65,5 +53,7 @@ namespace BasicWebServer.Demo.Controllers
 
             return Html("<h3>Logged out successfully!</h3>");
         }
+
+        public Response Login() => View();
     }
 }
